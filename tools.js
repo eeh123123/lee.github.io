@@ -191,3 +191,19 @@ function composeTree(list = []) {
 	})
 	return result
 }
+// 树结构排序
+function sort(data,id) {
+  function sortArr(data) {
+    if (Array.isArray(data)) {
+      data = data.sort(function (a, b) {
+        return a[id] - b[id]
+      })
+      // 排序子对象
+      for (let i = 0; i < data.length; i++) {
+        sortArr(data[i].children)
+      }
+    }
+  }
+  sortArr(data)
+  return data
+},
