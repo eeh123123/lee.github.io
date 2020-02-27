@@ -8,7 +8,7 @@ function getJsonLength(jsonData) {
 }
 
 //2 比较两个jsonArray的不同,其中array1是原数组，array2是修改后的数组
-function ComparArray(_array1, _array2) {
+function ComparArray(_array1, _array2, id) {
 	let array1 = JSON.parse(JSON.stringify(_array1));
 	let array2 = JSON.parse(JSON.stringify(_array2));
 
@@ -40,8 +40,52 @@ function ComparArray(_array1, _array2) {
 			}
 		}
 	}
+	return array_update
 }
 
+//3 获取新增函数
+function getInsert(array1, array2, id) {
+	let array_insert = []
+	let array_insert_str = []
+	for(let i = 0; i < array2.length; i++) {
+		if(array2[i].isInsert === true) {
+			array_insert.push(array2[i])
+		}
+	}
+	for(let i = 0; i < array2.length; i++) {
+		if(array2[i].isInsert === true) {
+			array2.slice(i, 1)
+		}
+	}
+	array_insert = JSON.parse(JSON.stringify(array_insert));
+
+	for(let i = 0; i < array_insert.length; i++) {
+		delete array_insert[i].isInsert
+		array_insert_str[i] = [] //初始化这个数组
+	}
+	let Insertcol = ""
+	for(let i in array_insert[0]) {
+		Insertcol += (i + ",")
+	}
+
+	for(let i = 0; i < array_insert.length; i++) {
+		for(let j in array_insert[i]) {
+			if(array_insert_str[i] === undefined) {
+				array_insert_str[i] = []
+			}
+			if(array_insert[i][j] == "") {
+				array_insert_str[i].push("")
+			} else {
+				array_insert_str[i].push(array_insert[i][j])
+			}
+		}
+	}
+	Insertcol = Insertcol.substring(0, Insertcol.length - 1)
+	return {
+		Insertcol: Insertcol,
+		array_insert_str: array_insert_str
+	}
+}
 
 var chnNumChar = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
 var chnUnitSection = ["", "万", "亿", "万亿", "亿亿"];
@@ -71,7 +115,7 @@ function SectionToChinese(section) {
 	return chnStr;
 }
 
-//3 数字转中文
+//4 数字转中文
 function NumberToChinese(num) {
 	var unitPos = 0;
 	var strIns = '',
@@ -134,7 +178,7 @@ var chnNameValue = {
 	}
 }
 
-//4 中文转数字
+//5 中文转数字
 function ChineseToNumber(chnStr) {
 	var rtn = 0;
 	var section = 0;
@@ -165,17 +209,18 @@ function ChineseToNumber(chnStr) {
 	return rtn + section;
 }
 
-//5 数组转tree
+//6 数组转tree
 function composeTree(list = []) {
 	//const data = JSON.parse(JSON.stringify(list)) // 浅拷贝不改变源数据
 	const data = list
 	const result = []
-	if (!Array.isArray(data)) {
+	if(!Array.isArray(data)) {
 		return result
 	}
 	data.forEach(item => {
 		// delete item.children
 		item.children = []
+		item.closed = true
 	})
 	const map = {}
 	data.forEach(item => {
@@ -183,7 +228,7 @@ function composeTree(list = []) {
 	})
 	data.forEach(item => {
 		const parent = map[item.fatherid]
-		if (parent) {
+		if(parent) {
 			(parent.children || (parent.children = [])).push(item)
 		} else {
 			result.push(item)
@@ -191,19 +236,42 @@ function composeTree(list = []) {
 	})
 	return result
 }
-// 树结构排序
-function sort(data,id) {
-  function sortArr(data) {
-    if (Array.isArray(data)) {
-      data = data.sort(function (a, b) {
-        return a[id] - b[id]
-      })
-      // 排序子对象
-      for (let i = 0; i < data.length; i++) {
-        sortArr(data[i].children)
-      }
-    }
-  }
-  sortArr(data)
-  return data
-},
+//7 树结构排序
+function sort(data, id) {
+	function sortArr(data) {
+		if(Array.isArray(data) && data.length > 0) {
+			data = data.sort(function(a, b) {
+				return a[id] - b[id]
+			})
+			// 排序子对象
+			for(let i = 0; i < data.length; i++) {
+				sortArr(data[i].children)
+			}
+		}
+	}
+	sortArr(data)
+	return data
+}
+
+function getQueryVariable(variable) {
+	var query = window.location.search.substring(1);
+	var vars = query.split("&");
+	for(var i = 0; i < vars.length; i++) {
+		var pair = vars[i].split("=");
+		if(pair[0] == variable) {
+			return pair[1];
+		}
+	}
+	return(false);
+}
+
+export default {
+	getJsonLength: getJsonLength,
+	ComparArray: ComparArray,
+	getInsert: getInsert,
+	SectionToChinese: SectionToChinese,
+	NumberToChinese: NumberToChinese,
+	ChineseToNumber: ChineseToNumber,
+	composeTree: composeTree,
+	sort: sort
+}
